@@ -3,570 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寶寶集點卡 v2.0</title>
-    <!-- 手寫字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
-    <!-- 慶祝特效 -->
+    <title>雙人集點手帳</title>
+    <!-- 引入圓體字型，比較舒服耐看 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Zen+Maru+Gothic:wght@500;900&display=swap" rel="stylesheet">
+    <!-- 煙火特效 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
-            --paper-color: #fff9f0;
-            --text-color: #4a4a4a;
+            --bg-color: #f4f4f0; /* 米色背景 */
+            --card-bg: #ffffff;
+            --text-main: #444444;
+            --text-light: #888888;
             
-            /* 好寶寶主題色 */
-            --good-primary: #ff8fa3;
-            --good-secondary: #fff0f3;
-            --good-border: #ffccd5;
+            /* 好寶寶主題 (珊瑚紅) */
+            --good-color: #e56b6f;
+            --good-light: #fff5f5;
+            
+            /* 壞寶寶主題 (深藍灰) */
+            --bad-color: #457b9d;
+            --bad-light: #f0f8ff;
 
-            /* 壞寶寶主題色 */
-            --bad-primary: #8ecae6;
-            --bad-secondary: #f0f8ff;
-            --bad-border: #bde0fe;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 16px;
         }
 
         * {
             box-sizing: border-box;
-            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             margin: 0;
-            padding: 0;
-            background-color: #f2e9e4;
-            font-family: 'Zen Maru Gothic', sans-serif;
-            height: 100vh;
+            padding: 20px;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            overflow: hidden; /* 禁止頁面捲動 */
         }
 
-        /* ----- 登入畫面 ----- */
-        #login-screen {
+        /* --- 登入層 --- */
+        #login-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,249,240, 0.95);
-            z-index: 999;
+            background: var(--bg-color);
+            z-index: 1000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s;
-        }
-        
-        .login-box {
-            background: #fff;
             padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: opacity 0.4s;
+        }
+
+        .login-card {
+            background: #fff;
+            padding: 40px 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             text-align: center;
-            border: 3px dashed #ccc;
-        }
-
-        input[type="text"] {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            padding: 10px;
-            font-size: 1.2rem;
-            border: 2px solid #ccc;
-            border-radius: 10px;
-            margin: 15px 0;
-            width: 200px;
-            text-align: center;
-        }
-
-        /* ----- 主介面容器 ----- */
-        .app-container {
-            width: 100%;
-            height: 100%;
-            max-width: 450px; /* 手機最大寬度 */
-            background-color: var(--paper-color);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        /* 頂部切換頁籤 */
-        .tabs {
-            display: flex;
-            height: 60px;
-        }
-
-        .tab {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .tab.active {
-            font-size: 1.4rem;
-        }
-
-        /* 好寶寶頁籤樣式 */
-        .tab-good { background: #ffe5ec; color: #ff5c8a; }
-        .tab-good.active { background: var(--good-primary); color: white; }
-
-        /* 壞寶寶頁籤樣式 */
-        .tab-bad { background: #e0fbfc; color: #219ebc; }
-        .tab-bad.active { background: var(--bad-primary); color: white; }
-
-        /* 卡片內容區 */
-        .content-area {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-image: radial-gradient(#ddd 1px, transparent 1px);
-            background-size: 20px 20px;
-            position: relative;
-        }
-
-        .header-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-family: 'Caveat', cursive;
-            margin: 0;
-            font-size: 3rem;
-            transform: rotate(-3deg);
-            color: var(--text-color);
-        }
-
-        .subtitle {
-            margin-top: 5px;
-            color: #888;
-            font-size: 1rem;
-        }
-
-        /* 10格集點區 */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
             width: 100%;
             max-width: 320px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .login-input:focus { border-color: var(--good-color); }
+
+        /* --- 主畫面容器 --- */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding-bottom: 50px; /* 預留底部空間 */
+        }
+
+        /* 頂部切換開關 */
+        .switch-container {
+            display: flex;
+            background: #e0e0e0;
+            border-radius: 50px;
+            padding: 4px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .switch-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: bold;
+            z-index: 2;
+            cursor: pointer;
+            transition: color 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .switch-bg {
+            position: absolute;
+            top: 4px; left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: #fff;
+            border-radius: 50px;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+
+        /* 切換狀態樣式 */
+        .mode-good .switch-bg { transform: translateX(0); background: #fff; }
+        .mode-good .switch-btn.active { color: var(--good-color); }
+        
+        .mode-bad .switch-bg { transform: translateX(100%); background: #fff; }
+        .mode-bad .switch-btn.active { color: var(--bad-color); }
+
+        /* --- 集點卡本體 --- */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 25px 20px;
+            transition: border-top-color 0.3s;
+            border-top: 6px solid var(--good-color); /* 預設顏色 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-bad .card { border-top-color: var(--bad-color); }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .counter {
+            font-size: 2rem;
+            font-weight: 900;
+            font-family: 'Zen Maru Gothic';
+            line-height: 1;
+        }
+        .counter span { font-size: 0.9rem; color: #bbb; font-weight: normal; }
+
+        /* --- 格子區 (5x2) --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 一排5個 */
+            gap: 12px;
+            margin-bottom: 10px;
         }
 
         .slot {
             aspect-ratio: 1/1;
-            background: rgba(255,255,255,0.8);
-            border: 2px dashed #bbb;
-            border-radius: 50% 45% 55% 40% / 40% 55% 45% 60%; /* 手繪不規則圓 */
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
-            color: #ddd;
-            cursor: pointer;
             position: relative;
-            transition: transform 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .slot:active { transform: scale(0.95); }
+        .slot:active { background: #eee; }
+        
+        /* 提示可蓋章的格子 */
+        .slot.next-slot {
+            border: 1px dashed #aaa;
+            background: #fff;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.05); }
+            70% { box-shadow: 0 0 0 5px rgba(0,0,0,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+        }
 
-        /* 印章本體 */
-        .stamp {
-            position: absolute;
-            width: 90%;
-            height: 90%;
+        /* --- 印章樣式 --- */
+        .stamp-mark {
+            width: 85%;
+            height: 85%;
             border-radius: 50%;
+            border: 2px solid currentColor;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Caveat', cursive;
-            font-weight: bold;
-            font-size: 1.4rem;
+            font-size: 0.9rem; /* 字體縮小 */
+            font-weight: 900;
+            transform: rotate(var(--r)) scale(0);
             opacity: 0;
-            transform: scale(2) rotate(var(--r));
-            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
-            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* 模擬印泥紋理 */
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
         }
 
-        /* 蓋章狀態 (好寶寶) */
-        .mode-good .slot.stamped { border-color: var(--good-border); }
-        .mode-good .stamp {
-            border: 3px solid var(--good-primary);
-            color: var(--good-primary);
-        }
-
-        /* 蓋章狀態 (壞寶寶) */
-        .mode-bad .slot.stamped { border-color: var(--bad-border); }
-        .mode-bad .stamp {
-            border: 3px solid var(--bad-primary);
-            color: var(--bad-primary);
-        }
-
-        .slot.stamped .stamp {
+        /* 蓋章後的狀態 */
+        .slot.stamped .stamp-mark {
+            transform: rotate(var(--r)) scale(1);
             opacity: 0.9;
-            transform: scale(1) rotate(var(--r));
         }
 
-        /* 底部進度條 */
-        .footer {
-            padding: 15px;
-            text-align: center;
-            background: rgba(255,255,255,0.5);
-            border-top: 1px dashed #ccc;
+        /* 好寶寶印章 */
+        .mode-good .stamp-mark { color: var(--good-color); border-color: var(--good-color); }
+        /* 壞寶寶印章 */
+        .mode-bad .stamp-mark { color: var(--bad-color); border-color: var(--bad-color); }
+
+        /* 數字標示 */
+        .slot-number {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 0.6rem;
+            color: #ddd;
+            pointer-events: none;
         }
 
-        .progress-text { font-size: 1.2rem; font-weight: bold; color: var(--text-color); }
+        /* --- Modal 彈窗 --- */
+        .modal-wrap {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: flex-end; /* 手機習慣：從下方滑出 */
+            padding-bottom: 0;
+        }
+        @media(min-width: 500px) {
+            .modal-wrap { align-items: center; padding-bottom: 0; }
+            .modal-content { border-radius: 20px !important; margin-bottom: 0 !important; width: 320px !important; }
+        }
 
-        /* 通用按鈕 */
+        .modal-content {
+            background: #fff;
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            padding: 30px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease;
+            margin-bottom: 0;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .modal-subtitle {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-family: inherit;
+            resize: none;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-group { display: flex; gap: 10px; }
         .btn {
-            padding: 10px 25px;
+            flex: 1;
+            padding: 12px;
             border: none;
-            border-radius: 30px;
-            font-family: 'Zen Maru Gothic', sans-serif;
+            border-radius: 10px;
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.1s;
         }
-        .btn:active { transform: scale(0.95); }
+        .btn-cancel { background: #f0f0f0; color: #666; }
         .btn-primary { background: #333; color: #fff; }
+        .btn-danger { background: #ffebee; color: #d32f2f; }
 
-        /* 彈出視窗 (Modal) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
+        .mode-good .btn-primary { background: var(--good-color); }
+        .mode-bad .btn-primary { background: var(--bad-color); }
 
-        .modal {
-            background: #fff;
-            width: 85%;
-            max-width: 320px;
-            padding: 25px;
-            border-radius: 20px;
-            text-align: center;
-            animation: popIn 0.3s ease;
-            position: relative;
-        }
+        /* 按鈕回饋 */
+        .btn:active { transform: scale(0.98); }
 
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .modal textarea {
-            width: 100%;
-            height: 80px;
-            margin: 15px 0;
-            padding: 10px;
-            border: 2px solid #eee;
+        /* 理由顯示區塊 */
+        .reason-display {
+            background: #f9f9f9;
+            padding: 15px;
             border-radius: 10px;
-            font-family: 'Zen Maru Gothic', sans-serif;
-            resize: none;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
 
-        .modal-title { font-size: 1.3rem; margin-bottom: 10px; font-weight: bold; }
-        .modal-buttons { display: flex; justify-content: space-around; gap: 10px; }
-        
-        .btn-cancel { background: #eee; color: #666; }
-        .btn-confirm { background: var(--good-primary); color: white; }
-        .btn-delete { background: #ff4d4d; color: white; }
-
-        /* 不同模式下的確認按鈕顏色 */
-        .mode-bad .btn-confirm { background: var(--bad-primary); }
-
-        /* 媒體查詢優化 */
-        @media (min-height: 700px) {
-            .grid { grid-template-columns: repeat(2, 1fr); gap: 25px; }
-        }
-        /* 如果螢幕很寬，改5欄 */
-        @media (min-width: 600px) {
-            .grid { grid-template-columns: repeat(5, 1fr); }
-            .app-container { max-width: 600px; height: auto; border-radius: 20px; margin: 20px; min-height: 80vh; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- 登入畫面 -->
-    <div id="login-screen">
-        <div class="login-box">
-            <h1 style="font-size: 2rem;">Who are you?</h1>
-            <p>請輸入寶寶的名字</p>
-            <input type="text" id="nameInput" placeholder="例如: 豬豬寶貝" maxlength="10">
-            <br>
-            <button class="btn btn-primary" onclick="login()">開始集點</button>
+    <!-- 登入遮罩 -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2 style="margin-top:0;">開始使用</h2>
+            <p style="color:#888; font-size:0.9rem;">這張卡片是屬於誰的呢？</p>
+            <input type="text" id="inputName" class="login-input" placeholder="輸入名字 (例如: 寶貝)" maxlength="8">
+            <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">確認</button>
         </div>
     </div>
 
-    <!-- 主程式 -->
-    <div class="app-container mode-good" id="appContainer">
-        <!-- 頁籤 -->
-        <div class="tabs">
-            <div class="tab tab-good active" onclick="switchTab('good')">好寶寶 ❤️</div>
-            <div class="tab tab-bad" onclick="switchTab('bad')">壞寶寶 🌩️</div>
+    <div class="container" id="mainApp" style="opacity: 0;">
+        
+        <!-- 切換開關 -->
+        <div class="switch-container mode-good" id="switchContainer">
+            <div class="switch-bg"></div>
+            <div class="switch-btn active" id="btnGood" onclick="toggleMode('good')">好寶寶</div>
+            <div class="switch-btn" id="btnBad" onclick="toggleMode('bad')">壞寶寶</div>
         </div>
 
-        <!-- 內容區 -->
-        <div class="content-area">
-            <div class="header-info">
-                <h1 id="cardTitle">Good Baby</h1>
-                <p class="subtitle"><span id="displayName">寶寶</span> 的集點卡</p>
+        <!-- 卡片區 -->
+        <div class="card" id="cardElement">
+            <div class="header">
+                <div>
+                    <div class="user-name" id="displayUserName">Name</div>
+                    <div class="card-title" id="cardTitleText">好寶寶集點</div>
+                </div>
+                <div class="counter">
+                    <span id="scoreText">0</span><span>/10</span>
+                </div>
             </div>
 
-            <div class="grid" id="stampGrid">
-                <!-- JS 產生格子 -->
+            <div class="grid" id="gridContainer">
+                <!-- JS 自動生成 10 個格子 -->
             </div>
-        </div>
-
-        <!-- 底部 -->
-        <div class="footer">
-            <div class="progress-text">
-                進度: <span id="currentScore">0</span> / 10
-            </div>
-            <div style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">集滿10點可兌換獎勵</div>
-        </div>
-    </div>
-
-    <!-- 輸入/查看理由 Modal -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-            <div class="modal-title" id="modalTitle">獲得一點</div>
-            <p id="modalDate" style="font-size: 0.8rem; color: #999; margin-bottom: 5px;"></p>
             
-            <!-- 輸入模式顯示 textarea, 查看模式顯示 p -->
-            <textarea id="reasonInput" placeholder="請輸入理由... (例如: 主動做家事)"></textarea>
-            <p id="reasonText" style="display:none; font-size: 1.1rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 10px;"></p>
+            <p style="text-align: center; color: #aaa; font-size: 0.8rem; margin-top: 20px;">
+                點擊印章可查看詳細理由
+            </p>
+        </div>
 
-            <div class="modal-buttons" id="inputButtons">
-                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-                <button class="btn btn-confirm" onclick="confirmStamp()">蓋章!</button>
+    </div>
+
+    <!-- Modal: 新增/查看 -->
+    <div class="modal-wrap" id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="mTitle">標題</div>
+            <div class="modal-subtitle" id="mDate">日期</div>
+            
+            <!-- 輸入區 -->
+            <div id="inputSection">
+                <textarea id="reasonInput" placeholder="請輸入原因..."></textarea>
+                <div class="btn-group">
+                    <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" onclick="confirmStamp()">蓋章</button>
+                </div>
             </div>
 
-            <div class="modal-buttons" id="viewButtons" style="display:none;">
-                <button class="btn btn-cancel" onclick="closeModal()">關閉</button>
-                <button class="btn btn-delete" onclick="deleteStamp()">撤銷此點</button>
+            <!-- 查看區 -->
+            <div id="viewSection" style="display:none;">
+                <div class="reason-display" id="reasonText"></div>
+                <div class="btn-group">
+                    <button class="btn btn-cancel" onclick="closeModal()">關閉</button>
+                    <button class="btn btn-danger" onclick="deletePoint()">刪除此點</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 資料結構
-        const TOTAL_POINTS = 10;
-        let appData = {
-            name: "",
-            goodPoints: [], // 存放物件: { reason: "", date: "" }
+        // 資料狀態
+        const STATE = {
+            user: "",
+            mode: "good", // good | bad
+            goodPoints: [],
             badPoints: []
         };
         
-        let currentTab = 'good'; // 'good' or 'bad'
-        let selectedSlotIndex = -1; // 正在操作哪一格
+        let currentFocusIndex = -1; // 用來記錄目前點擊的是哪一格
 
-        // DOM 元素
-        const loginScreen = document.getElementById('login-screen');
-        const appContainer = document.getElementById('appContainer');
-        const displayName = document.getElementById('displayName');
-        const stampGrid = document.getElementById('stampGrid');
-        const currentScore = document.getElementById('currentScore');
-        const cardTitle = document.getElementById('cardTitle');
-        const nameInput = document.getElementById('nameInput');
-
-        // Modal 相關元素
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalTitle = document.getElementById('modalTitle');
-        const reasonInput = document.getElementById('reasonInput');
-        const reasonText = document.getElementById('reasonText');
-        const inputButtons = document.getElementById('inputButtons');
-        const viewButtons = document.getElementById('viewButtons');
-        const modalDate = document.getElementById('modalDate');
+        // DOM
+        const els = {
+            login: document.getElementById('login-overlay'),
+            main: document.getElementById('mainApp'),
+            inputName: document.getElementById('inputName'),
+            displayName: document.getElementById('displayUserName'),
+            switchContainer: document.getElementById('switchContainer'),
+            btnGood: document.getElementById('btnGood'),
+            btnBad: document.getElementById('btnBad'),
+            card: document.getElementById('cardElement'),
+            cardTitle: document.getElementById('cardTitleText'),
+            score: document.getElementById('scoreText'),
+            grid: document.getElementById('gridContainer'),
+            // Modal
+            modal: document.getElementById('modal'),
+            mTitle: document.getElementById('mTitle'),
+            mDate: document.getElementById('mDate'),
+            inputSec: document.getElementById('inputSection'),
+            viewSec: document.getElementById('viewSection'),
+            reasonInput: document.getElementById('reasonInput'),
+            reasonText: document.getElementById('reasonText')
+        };
 
         // 初始化
         function init() {
-            const savedData = localStorage.getItem('baby_card_data_v2');
-            if (savedData) {
-                appData = JSON.parse(savedData);
-                if (appData.name) {
-                    enterApp();
+            const saved = localStorage.getItem('love_card_v3');
+            if(saved) {
+                const data = JSON.parse(saved);
+                STATE.user = data.user;
+                STATE.goodPoints = data.goodPoints || [];
+                STATE.badPoints = data.badPoints || [];
+                
+                if(STATE.user) {
+                    els.login.style.display = 'none';
+                    els.main.style.opacity = 1;
+                    els.displayName.textContent = STATE.user + " 的";
+                    render();
                 }
             }
         }
 
-        // 登入
-        function login() {
-            const name = nameInput.value.trim();
-            if (!name) return alert("請輸入名字唷！");
-            appData.name = name;
-            saveData();
-            enterApp();
-        }
-
-        function enterApp() {
-            loginScreen.style.opacity = 0;
-            setTimeout(() => {
-                loginScreen.style.display = 'none';
-            }, 500);
-            displayName.innerText = appData.name;
-            renderGrid();
-        }
-
-        // 切換頁籤
-        function switchTab(tab) {
-            currentTab = tab;
+        // 登入處理
+        window.handleLogin = function() {
+            const name = els.inputName.value.trim();
+            if(!name) return alert("請輸入名字");
             
-            // 更新 UI 樣式
-            appContainer.className = `app-container mode-${tab}`;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelector(`.tab-${tab}`).classList.add('active');
+            STATE.user = name;
+            save();
+            
+            els.login.style.opacity = 0;
+            setTimeout(() => {
+                els.login.style.display = 'none';
+                els.main.style.opacity = 1;
+            }, 400);
+            
+            els.displayName.textContent = STATE.user + " 的";
+            render();
+        }
 
-            cardTitle.innerText = tab === 'good' ? 'Good Baby' : 'Bad Baby';
-            renderGrid();
+        // 切換模式
+        window.toggleMode = function(mode) {
+            STATE.mode = mode;
+            
+            // UI 更新
+            if(mode === 'good') {
+                els.switchContainer.classList.remove('mode-bad');
+                els.switchContainer.classList.add('mode-good');
+                els.btnGood.classList.add('active');
+                els.btnBad.classList.remove('active');
+                els.card.parentElement.className = "container mode-good";
+                els.cardTitle.innerText = "好寶寶集點";
+                els.cardTitle.style.color = "var(--good-color)";
+                els.score.style.color = "var(--good-color)";
+            } else {
+                els.switchContainer.classList.remove('mode-good');
+                els.switchContainer.classList.add('mode-bad');
+                els.btnBad.classList.add('active');
+                els.btnGood.classList.remove('active');
+                els.card.parentElement.className = "container mode-bad";
+                els.cardTitle.innerText = "壞寶寶紀錄";
+                els.cardTitle.style.color = "var(--bad-color)";
+                els.score.style.color = "var(--bad-color)";
+            }
+            render();
         }
 
         // 渲染格子
-        function renderGrid() {
-            stampGrid.innerHTML = '';
-            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
-            currentScore.innerText = points.length;
+        function render() {
+            els.grid.innerHTML = "";
+            const list = STATE.mode === 'good' ? STATE.goodPoints : STATE.badPoints;
+            els.score.innerText = list.length;
 
-            for (let i = 0; i < TOTAL_POINTS; i++) {
+            for(let i=0; i<10; i++) {
+                const item = list[i];
                 const slot = document.createElement('div');
                 slot.className = 'slot';
                 
-                // 產生隨機旋轉角度 CSS 變數
-                const rotate = Math.floor(Math.random() * 60) - 30;
-                slot.style.setProperty('--r', `${rotate}deg`);
+                // 產生隨機角度
+                const rot = Math.floor(Math.random()*40 - 20); 
 
-                if (i < points.length) {
+                if(item) {
                     // 已蓋章
                     slot.classList.add('stamped');
-                    const stampType = currentTab === 'good' ? 'Good' : 'Bad';
-                    slot.innerHTML = `<div class="stamp">${stampType}</div>`;
-                    slot.onclick = () => viewReason(i); // 點擊查看理由
-                } else if (i === points.length) {
-                    // 下一個空格 (可蓋章)
-                    slot.onclick = () => openStampModal();
-                    slot.style.border = "2px dashed #888"; // 提示這裡是下一格
+                    slot.innerHTML = `
+                        <div class="stamp-mark" style="--r:${rot}deg">
+                            ${STATE.mode === 'good' ? '優' : '罰'}
+                        </div>
+                    `;
+                    slot.onclick = () => openViewModal(i, item);
+                } else if (i === list.length) {
+                    // 下一個空格
+                    slot.classList.add('next-slot');
+                    slot.onclick = () => openInputModal();
+                } else {
+                    // 尚未解鎖
+                    slot.style.opacity = 0.5;
+                    slot.style.cursor = 'default';
                 }
 
-                stampGrid.appendChild(slot);
-            }
-
-            // 檢查是否集滿
-            if (points.length === TOTAL_POINTS) {
-                // 這裡可以加一點特效，避免每次渲染都跑
+                // 右下角數字
+                slot.innerHTML += `<span class="slot-number">${i+1}</span>`;
+                els.grid.appendChild(slot);
             }
         }
 
-        // --- Modal 邏輯 ---
+        // --- Modal 操作 ---
 
-        // 開啟蓋章視窗
-        function openStampModal() {
-            selectedSlotIndex = -1; // -1 代表新增模式
-            modalOverlay.style.display = 'flex';
+        window.openInputModal = function() {
+            els.modal.style.display = 'flex';
+            els.inputSec.style.display = 'block';
+            els.viewSec.style.display = 'none';
             
-            modalTitle.innerText = currentTab === 'good' ? '給好寶寶蓋個章' : '喔喔...壞寶寶嗎？';
-            reasonInput.style.display = 'block';
-            reasonInput.value = '';
-            reasonText.style.display = 'none';
-            inputButtons.style.display = 'flex';
-            viewButtons.style.display = 'none';
-            modalDate.innerText = new Date().toLocaleDateString();
+            els.mTitle.innerText = STATE.mode === 'good' ? "獲得好寶寶印章" : "新增壞寶寶紀錄";
+            els.mDate.innerText = new Date().toLocaleDateString();
+            els.reasonInput.value = "";
+            els.reasonInput.focus();
         }
 
-        // 開啟查看理由視窗
-        function viewReason(index) {
-            selectedSlotIndex = index;
-            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
-            const data = points[index];
-
-            modalOverlay.style.display = 'flex';
-            modalTitle.innerText = `第 ${index + 1} 點的理由`;
+        window.openViewModal = function(index, item) {
+            currentFocusIndex = index;
+            els.modal.style.display = 'flex';
+            els.inputSec.style.display = 'none';
+            els.viewSec.style.display = 'block';
             
-            reasonInput.style.display = 'none';
-            reasonText.style.display = 'block';
-            reasonText.innerText = data.reason || "沒有填寫理由";
-            modalDate.innerText = data.date;
-
-            inputButtons.style.display = 'none';
-            viewButtons.style.display = 'flex';
+            els.mTitle.innerText = `第 ${index+1} 點的詳細內容`;
+            els.mDate.innerText = item.date;
+            els.reasonText.innerText = item.reason || "沒有填寫理由";
         }
 
-        function closeModal() {
-            modalOverlay.style.display = 'none';
+        window.closeModal = function() {
+            els.modal.style.display = 'none';
         }
 
         // 確認蓋章
-        function confirmStamp() {
-            const reason = reasonInput.value.trim();
-            if (!reason && !confirm("確定不寫理由直接蓋章嗎？")) return;
-
+        window.confirmStamp = function() {
+            const reason = els.reasonInput.value.trim() || "未填寫";
             const newPoint = {
-                reason: reason || "秘密",
-                date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                reason: reason,
+                date: new Date().toLocaleString()
             };
 
-            if (currentTab === 'good') {
-                appData.goodPoints.push(newPoint);
-                triggerConfetti();
+            if(STATE.mode === 'good') {
+                STATE.goodPoints.push(newPoint);
+                // 特效
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.8 },
+                    colors: ['#e56b6f', '#ffcdb2']
+                });
             } else {
-                appData.badPoints.push(newPoint);
+                STATE.badPoints.push(newPoint);
             }
 
-            saveData();
-            renderGrid();
+            save();
+            render();
             closeModal();
-
-            if (appData[currentTab === 'good' ? 'goodPoints' : 'badPoints'].length === TOTAL_POINTS) {
-                setTimeout(() => alert("恭喜集滿 10 點！快去兌換獎勵！"), 500);
+            
+            if(STATE.goodPoints.length === 10 && STATE.mode === 'good') {
+                setTimeout(()=>alert("恭喜集滿 10 點！可以兌換願望囉！"), 500);
             }
         }
 
-        // 刪除印章
-        function deleteStamp() {
-            if (!confirm("確定要撤銷這一點嗎？")) return;
-
-            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
-            // 刪除邏輯：雖然點選特定格子，但通常集點卡是從最後面開始刪
-            // 為了簡單邏輯，我們刪除該筆資料，並重新渲染
+        // 刪除點數
+        window.deletePoint = function() {
+            if(!confirm("確定要刪除這一點嗎？")) return;
             
-            // 進階邏輯：如果要刪除中間的點，通常會把後面的往前移
-            points.splice(selectedSlotIndex, 1);
+            const list = STATE.mode === 'good' ? STATE.goodPoints : STATE.badPoints;
+            list.splice(currentFocusIndex, 1);
             
-            saveData();
-            renderGrid();
+            save();
+            render();
             closeModal();
         }
 
-        // 儲存資料
-        function saveData() {
-            localStorage.setItem('baby_card_data_v2', JSON.stringify(appData));
+        function save() {
+            localStorage.setItem('love_card_v3', JSON.stringify(STATE));
         }
 
-        // 慶祝特效
-        function triggerConfetti() {
-            const colors = currentTab === 'good' ? ['#ff8fa3', '#fff0f3'] : ['#8ecae6', '#219ebc'];
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: colors
-            });
-        }
-
-        // 啟動 App
+        // 啟動
         init();
+        // 預設跑一次 Toggle 確保 UI 正確
+        toggleMode('good'); 
 
     </script>
 </body>
