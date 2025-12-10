@@ -3,356 +3,571 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寶寶集點卡</title>
-    <!-- 引入手寫字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Zen+Maru+Gothic:wght@500&display=swap" rel="stylesheet">
-    <!-- 引入慶祝特效庫 -->
+    <title>寶寶集點卡 v2.0</title>
+    <!-- 手寫字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <!-- 慶祝特效 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
-            --paper-color: #fdf6e3;
-            --line-color: #5d5d5d;
-            --stamp-color: #e63946;
-            --bg-color: #faf0e6;
+            --paper-color: #fff9f0;
+            --text-color: #4a4a4a;
+            
+            /* 好寶寶主題色 */
+            --good-primary: #ff8fa3;
+            --good-secondary: #fff0f3;
+            --good-border: #ffccd5;
+
+            /* 壞寶寶主題色 */
+            --bad-primary: #8ecae6;
+            --bad-secondary: #f0f8ff;
+            --bad-border: #bde0fe;
         }
 
         * {
             box-sizing: border-box;
-            user-select: none; /* 防止手機雙擊放大 */
+            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             margin: 0;
-            padding: 20px;
-            background-color: var(--bg-color);
+            padding: 0;
+            background-color: #f2e9e4;
             font-family: 'Zen Maru Gothic', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 禁止頁面捲動 */
+        }
+
+        /* ----- 登入畫面 ----- */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,249,240, 0.95);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+        
+        .login-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 3px dashed #ccc;
+        }
+
+        input[type="text"] {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            padding: 10px;
+            font-size: 1.2rem;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            margin: 15px 0;
+            width: 200px;
+            text-align: center;
+        }
+
+        /* ----- 主介面容器 ----- */
+        .app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 450px; /* 手機最大寬度 */
+            background-color: var(--paper-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* 頂部切換頁籤 */
+        .tabs {
+            display: flex;
+            height: 60px;
+        }
+
+        .tab {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab.active {
+            font-size: 1.4rem;
+        }
+
+        /* 好寶寶頁籤樣式 */
+        .tab-good { background: #ffe5ec; color: #ff5c8a; }
+        .tab-good.active { background: var(--good-primary); color: white; }
+
+        /* 壞寶寶頁籤樣式 */
+        .tab-bad { background: #e0fbfc; color: #219ebc; }
+        .tab-bad.active { background: var(--bad-primary); color: white; }
+
+        /* 卡片內容區 */
+        .content-area {
+            flex: 1;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* 卡片主體 - 模擬手撕紙張邊緣 */
-        .card {
-            background-color: var(--paper-color);
-            width: 100%;
-            max-width: 380px;
-            padding: 20px;
-            border-radius: 2px;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            justify-content: center;
+            background-image: radial-gradient(#ddd 1px, transparent 1px);
+            background-size: 20px 20px;
             position: relative;
-            /* 使用 clip-path 模擬粗糙邊緣，或者簡單用 border */
-            border: 2px solid var(--line-color);
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* 不規則圓角 */
-            transition: transform 0.3s ease;
         }
 
-        header {
+        .header-info {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 2px dashed var(--line-color);
-            padding-bottom: 10px;
         }
 
         h1 {
-            font-family: 'Caveat', cursive; /* 手寫英文/數字 */
-            font-size: 2.5rem;
-            color: var(--line-color);
+            font-family: 'Caveat', cursive;
             margin: 0;
-            transform: rotate(-2deg);
+            font-size: 3rem;
+            transform: rotate(-3deg);
+            color: var(--text-color);
         }
 
-        p.subtitle {
-            margin: 5px 0 0 0;
+        .subtitle {
+            margin-top: 5px;
             color: #888;
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
 
-        /* 集點區域 */
-        .grid-container {
+        /* 10格集點區 */
+        .grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 手機版兩列 */
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 320px;
         }
 
-        .stamp-box {
-            aspect-ratio: 1 / 1;
-            border: 2px solid var(--line-color);
-            border-radius: 50% 40% 60% 30% / 40% 50% 60% 50%; /* 手繪圓圈感 */
+        .slot {
+            aspect-ratio: 1/1;
+            background: rgba(255,255,255,0.8);
+            border: 2px dashed #bbb;
+            border-radius: 50% 45% 55% 40% / 40% 55% 45% 60%; /* 手繪不規則圓 */
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 1.5rem;
             color: #ddd;
-            position: relative;
-            background: #fff;
             cursor: pointer;
-            transition: transform 0.1s;
+            position: relative;
+            transition: transform 0.2s;
         }
 
-        .stamp-box:active {
-            transform: scale(0.95);
-        }
+        .slot:active { transform: scale(0.95); }
 
-        /* 印章樣式 */
-        .stamp-mark {
+        /* 印章本體 */
+        .stamp {
             position: absolute;
-            width: 80%;
-            height: 80%;
-            border: 3px solid var(--stamp-color);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--stamp-color);
-            font-weight: bold;
-            font-family: 'Caveat', cursive;
-            font-size: 1.2rem;
-            opacity: 0;
-            transform: scale(2);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-            /* 模擬墨水質感 */
-            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
-        }
-
-        /* 蓋章後的狀態 */
-        .stamp-box.active .stamp-mark {
-            opacity: 0.85; /* 不完全不透明，像墨水 */
-            transform: scale(1) rotate(var(--r)); /* 隨機旋轉 */
-        }
-
-        .stamp-inner {
-            border: 1px dashed var(--stamp-color);
             width: 90%;
             height: 90%;
             border-radius: 50%;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-family: 'Caveat', cursive;
+            font-weight: bold;
+            font-size: 1.4rem;
+            opacity: 0;
+            transform: scale(2) rotate(var(--r));
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
         }
 
-        /* 控制按鈕區 */
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
+        /* 蓋章狀態 (好寶寶) */
+        .mode-good .slot.stamped { border-color: var(--good-border); }
+        .mode-good .stamp {
+            border: 3px solid var(--good-primary);
+            color: var(--good-primary);
         }
 
-        button {
+        /* 蓋章狀態 (壞寶寶) */
+        .mode-bad .slot.stamped { border-color: var(--bad-border); }
+        .mode-bad .stamp {
+            border: 3px solid var(--bad-primary);
+            color: var(--bad-primary);
+        }
+
+        .slot.stamped .stamp {
+            opacity: 0.9;
+            transform: scale(1) rotate(var(--r));
+        }
+
+        /* 底部進度條 */
+        .footer {
+            padding: 15px;
+            text-align: center;
+            background: rgba(255,255,255,0.5);
+            border-top: 1px dashed #ccc;
+        }
+
+        .progress-text { font-size: 1.2rem; font-weight: bold; color: var(--text-color); }
+
+        /* 通用按鈕 */
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 30px;
             font-family: 'Zen Maru Gothic', sans-serif;
-            padding: 10px 20px;
-            border: 2px solid var(--line-color);
-            background: #fff;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            cursor: pointer;
             font-weight: bold;
             font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.1s;
         }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: #333; color: #fff; }
 
-        button:active {
-            transform: scale(0.95);
-            background: #f0f0f0;
-        }
-
-        .btn-bad {
-            color: #d00000;
-        }
-        
-        .btn-reset {
-            color: #666;
-            font-size: 0.8rem;
-            margin-top: 30px;
-            border: 1px dashed #999;
-        }
-
-        /* 集滿獎勵視窗 */
-        .reward-modal {
+        /* 彈出視窗 (Modal) */
+        .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 2000;
         }
 
-        .reward-content {
+        .modal {
             background: #fff;
-            padding: 30px;
+            width: 85%;
+            max-width: 320px;
+            padding: 25px;
             border-radius: 20px;
             text-align: center;
-            max-width: 80%;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: popIn 0.3s ease;
+            position: relative;
         }
 
         @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
+            from { transform: scale(0.8); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
 
-        /* 手機文字大小調整 */
-        @media (min-width: 500px) {
-            .grid-container {
-                grid-template-columns: repeat(5, 1fr);
-            }
+        .modal textarea {
+            width: 100%;
+            height: 80px;
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            resize: none;
+        }
+
+        .modal-title { font-size: 1.3rem; margin-bottom: 10px; font-weight: bold; }
+        .modal-buttons { display: flex; justify-content: space-around; gap: 10px; }
+        
+        .btn-cancel { background: #eee; color: #666; }
+        .btn-confirm { background: var(--good-primary); color: white; }
+        .btn-delete { background: #ff4d4d; color: white; }
+
+        /* 不同模式下的確認按鈕顏色 */
+        .mode-bad .btn-confirm { background: var(--bad-primary); }
+
+        /* 媒體查詢優化 */
+        @media (min-height: 700px) {
+            .grid { grid-template-columns: repeat(2, 1fr); gap: 25px; }
+        }
+        /* 如果螢幕很寬，改5欄 */
+        @media (min-width: 600px) {
+            .grid { grid-template-columns: repeat(5, 1fr); }
+            .app-container { max-width: 600px; height: auto; border-radius: 20px; margin: 20px; min-height: 80vh; }
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <header>
-            <h1>Love Coupon</h1>
-            <p class="subtitle">好寶寶集點卡</p>
-        </header>
-
-        <div class="grid-container" id="grid">
-            <!-- JS 會自動產生 10 個格子 -->
-        </div>
-
-        <div style="text-align: center; margin-top: 10px;">
-            <p>目前點數: <span id="score-display" style="font-family: 'Caveat'; font-size: 1.5rem; font-weight: bold;">0</span> / 10</p>
-        </div>
-
-        <div class="controls">
-            <button class="btn-good" onclick="addPoint()">+ 好寶寶 (蓋章)</button>
-            <button class="btn-bad" onclick="removePoint()">- 壞寶寶 (擦掉)</button>
-        </div>
-        
-        <div style="text-align: center;">
-            <button class="btn-reset" onclick="resetCard()">重新開始</button>
+    <!-- 登入畫面 -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h1 style="font-size: 2rem;">Who are you?</h1>
+            <p>請輸入寶寶的名字</p>
+            <input type="text" id="nameInput" placeholder="例如: 豬豬寶貝" maxlength="10">
+            <br>
+            <button class="btn btn-primary" onclick="login()">開始集點</button>
         </div>
     </div>
 
-    <!-- 獎勵視窗 -->
-    <div class="reward-modal" id="rewardModal">
-        <div class="reward-content">
-            <h2 style="color: var(--stamp-color);">🎉 集點完成！ 🎉</h2>
-            <p>恭喜獲得神秘獎勵！<br>請向另一半兌換 ❤️</p>
-            <button onclick="closeModal()">好耶！</button>
+    <!-- 主程式 -->
+    <div class="app-container mode-good" id="appContainer">
+        <!-- 頁籤 -->
+        <div class="tabs">
+            <div class="tab tab-good active" onclick="switchTab('good')">好寶寶 ❤️</div>
+            <div class="tab tab-bad" onclick="switchTab('bad')">壞寶寶 🌩️</div>
+        </div>
+
+        <!-- 內容區 -->
+        <div class="content-area">
+            <div class="header-info">
+                <h1 id="cardTitle">Good Baby</h1>
+                <p class="subtitle"><span id="displayName">寶寶</span> 的集點卡</p>
+            </div>
+
+            <div class="grid" id="stampGrid">
+                <!-- JS 產生格子 -->
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="footer">
+            <div class="progress-text">
+                進度: <span id="currentScore">0</span> / 10
+            </div>
+            <div style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">集滿10點可兌換獎勵</div>
+        </div>
+    </div>
+
+    <!-- 輸入/查看理由 Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">獲得一點</div>
+            <p id="modalDate" style="font-size: 0.8rem; color: #999; margin-bottom: 5px;"></p>
+            
+            <!-- 輸入模式顯示 textarea, 查看模式顯示 p -->
+            <textarea id="reasonInput" placeholder="請輸入理由... (例如: 主動做家事)"></textarea>
+            <p id="reasonText" style="display:none; font-size: 1.1rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 10px;"></p>
+
+            <div class="modal-buttons" id="inputButtons">
+                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn btn-confirm" onclick="confirmStamp()">蓋章!</button>
+            </div>
+
+            <div class="modal-buttons" id="viewButtons" style="display:none;">
+                <button class="btn btn-cancel" onclick="closeModal()">關閉</button>
+                <button class="btn btn-delete" onclick="deleteStamp()">撤銷此點</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 設定總點數
+        // 資料結構
         const TOTAL_POINTS = 10;
-        let currentPoints = 0;
+        let appData = {
+            name: "",
+            goodPoints: [], // 存放物件: { reason: "", date: "" }
+            badPoints: []
+        };
         
-        // 抓取 DOM 元素
-        const grid = document.getElementById('grid');
-        const scoreDisplay = document.getElementById('score-display');
-        const rewardModal = document.getElementById('rewardModal');
+        let currentTab = 'good'; // 'good' or 'bad'
+        let selectedSlotIndex = -1; // 正在操作哪一格
+
+        // DOM 元素
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('appContainer');
+        const displayName = document.getElementById('displayName');
+        const stampGrid = document.getElementById('stampGrid');
+        const currentScore = document.getElementById('currentScore');
+        const cardTitle = document.getElementById('cardTitle');
+        const nameInput = document.getElementById('nameInput');
+
+        // Modal 相關元素
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const reasonInput = document.getElementById('reasonInput');
+        const reasonText = document.getElementById('reasonText');
+        const inputButtons = document.getElementById('inputButtons');
+        const viewButtons = document.getElementById('viewButtons');
+        const modalDate = document.getElementById('modalDate');
 
         // 初始化
         function init() {
-            // 從 LocalStorage 讀取點數
-            const savedPoints = localStorage.getItem('love_card_points');
-            if (savedPoints) {
-                currentPoints = parseInt(savedPoints);
+            const savedData = localStorage.getItem('baby_card_data_v2');
+            if (savedData) {
+                appData = JSON.parse(savedData);
+                if (appData.name) {
+                    enterApp();
+                }
             }
-
-            // 產生格子
-            grid.innerHTML = '';
-            for (let i = 0; i < TOTAL_POINTS; i++) {
-                const box = document.createElement('div');
-                box.className = 'stamp-box';
-                box.id = `box-${i}`;
-                
-                // 印章圖案 (GOOD)
-                const mark = document.createElement('div');
-                mark.className = 'stamp-mark';
-                // 設定隨機旋轉角度，讓印章看起來自然
-                const randomRotate = Math.floor(Math.random() * 40) - 20; 
-                mark.style.setProperty('--r', `${randomRotate}deg`);
-                
-                mark.innerHTML = '<div class="stamp-inner">Good</div>';
-                
-                box.appendChild(mark);
-                grid.appendChild(box);
-            }
-
-            updateView();
         }
 
-        // 更新畫面
-        function updateView() {
-            scoreDisplay.innerText = currentPoints;
-            localStorage.setItem('love_card_points', currentPoints);
+        // 登入
+        function login() {
+            const name = nameInput.value.trim();
+            if (!name) return alert("請輸入名字唷！");
+            appData.name = name;
+            saveData();
+            enterApp();
+        }
+
+        function enterApp() {
+            loginScreen.style.opacity = 0;
+            setTimeout(() => {
+                loginScreen.style.display = 'none';
+            }, 500);
+            displayName.innerText = appData.name;
+            renderGrid();
+        }
+
+        // 切換頁籤
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 更新 UI 樣式
+            appContainer.className = `app-container mode-${tab}`;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab-${tab}`).classList.add('active');
+
+            cardTitle.innerText = tab === 'good' ? 'Good Baby' : 'Bad Baby';
+            renderGrid();
+        }
+
+        // 渲染格子
+        function renderGrid() {
+            stampGrid.innerHTML = '';
+            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
+            currentScore.innerText = points.length;
 
             for (let i = 0; i < TOTAL_POINTS; i++) {
-                const box = document.getElementById(`box-${i}`);
-                if (i < currentPoints) {
-                    box.classList.add('active');
-                } else {
-                    box.classList.remove('active');
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                
+                // 產生隨機旋轉角度 CSS 變數
+                const rotate = Math.floor(Math.random() * 60) - 30;
+                slot.style.setProperty('--r', `${rotate}deg`);
+
+                if (i < points.length) {
+                    // 已蓋章
+                    slot.classList.add('stamped');
+                    const stampType = currentTab === 'good' ? 'Good' : 'Bad';
+                    slot.innerHTML = `<div class="stamp">${stampType}</div>`;
+                    slot.onclick = () => viewReason(i); // 點擊查看理由
+                } else if (i === points.length) {
+                    // 下一個空格 (可蓋章)
+                    slot.onclick = () => openStampModal();
+                    slot.style.border = "2px dashed #888"; // 提示這裡是下一格
                 }
+
+                stampGrid.appendChild(slot);
             }
 
             // 檢查是否集滿
-            if (currentPoints >= TOTAL_POINTS) {
-                setTimeout(showReward, 300);
+            if (points.length === TOTAL_POINTS) {
+                // 這裡可以加一點特效，避免每次渲染都跑
             }
         }
 
-        // 加分 (好寶寶)
-        function addPoint() {
-            if (currentPoints < TOTAL_POINTS) {
-                currentPoints++;
-                updateView();
-                triggerVibration();
-            }
+        // --- Modal 邏輯 ---
+
+        // 開啟蓋章視窗
+        function openStampModal() {
+            selectedSlotIndex = -1; // -1 代表新增模式
+            modalOverlay.style.display = 'flex';
+            
+            modalTitle.innerText = currentTab === 'good' ? '給好寶寶蓋個章' : '喔喔...壞寶寶嗎？';
+            reasonInput.style.display = 'block';
+            reasonInput.value = '';
+            reasonText.style.display = 'none';
+            inputButtons.style.display = 'flex';
+            viewButtons.style.display = 'none';
+            modalDate.innerText = new Date().toLocaleDateString();
         }
 
-        // 扣分 (壞寶寶)
-        function removePoint() {
-            if (currentPoints > 0) {
-                currentPoints--;
-                updateView();
-                triggerVibration();
-            }
-        }
+        // 開啟查看理由視窗
+        function viewReason(index) {
+            selectedSlotIndex = index;
+            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
+            const data = points[index];
 
-        // 重新開始
-        function resetCard() {
-            if (confirm('確定要清空所有點數重新開始嗎？')) {
-                currentPoints = 0;
-                updateView();
-            }
-        }
+            modalOverlay.style.display = 'flex';
+            modalTitle.innerText = `第 ${index + 1} 點的理由`;
+            
+            reasonInput.style.display = 'none';
+            reasonText.style.display = 'block';
+            reasonText.innerText = data.reason || "沒有填寫理由";
+            modalDate.innerText = data.date;
 
-        // 手機震動回饋 (如果裝置支援)
-        function triggerVibration() {
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
-
-        // 顯示獎勵
-        function showReward() {
-            rewardModal.style.display = 'flex';
-            // 發射彩帶
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
+            inputButtons.style.display = 'none';
+            viewButtons.style.display = 'flex';
         }
 
         function closeModal() {
-            rewardModal.style.display = 'none';
+            modalOverlay.style.display = 'none';
         }
 
-        // 啟動
+        // 確認蓋章
+        function confirmStamp() {
+            const reason = reasonInput.value.trim();
+            if (!reason && !confirm("確定不寫理由直接蓋章嗎？")) return;
+
+            const newPoint = {
+                reason: reason || "秘密",
+                date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            };
+
+            if (currentTab === 'good') {
+                appData.goodPoints.push(newPoint);
+                triggerConfetti();
+            } else {
+                appData.badPoints.push(newPoint);
+            }
+
+            saveData();
+            renderGrid();
+            closeModal();
+
+            if (appData[currentTab === 'good' ? 'goodPoints' : 'badPoints'].length === TOTAL_POINTS) {
+                setTimeout(() => alert("恭喜集滿 10 點！快去兌換獎勵！"), 500);
+            }
+        }
+
+        // 刪除印章
+        function deleteStamp() {
+            if (!confirm("確定要撤銷這一點嗎？")) return;
+
+            const points = currentTab === 'good' ? appData.goodPoints : appData.badPoints;
+            // 刪除邏輯：雖然點選特定格子，但通常集點卡是從最後面開始刪
+            // 為了簡單邏輯，我們刪除該筆資料，並重新渲染
+            
+            // 進階邏輯：如果要刪除中間的點，通常會把後面的往前移
+            points.splice(selectedSlotIndex, 1);
+            
+            saveData();
+            renderGrid();
+            closeModal();
+        }
+
+        // 儲存資料
+        function saveData() {
+            localStorage.setItem('baby_card_data_v2', JSON.stringify(appData));
+        }
+
+        // 慶祝特效
+        function triggerConfetti() {
+            const colors = currentTab === 'good' ? ['#ff8fa3', '#fff0f3'] : ['#8ecae6', '#219ebc'];
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: colors
+            });
+        }
+
+        // 啟動 App
         init();
+
     </script>
 </body>
 </html>
