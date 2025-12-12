@@ -3,436 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>雙人集點手帳</title>
-    <!-- 引入圓體字型，比較舒服耐看 -->
+    <title>雙人小手帳</title>
+    <!-- 引入字型 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Zen+Maru+Gothic:wght@500;900&display=swap" rel="stylesheet">
-    <!-- 煙火特效 -->
+    <!-- 特效庫 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #f4f4f0; /* 米色背景 */
+            --bg-color: #f6f6f4;
             --card-bg: #ffffff;
-            --text-main: #444444;
-            --text-light: #888888;
+            --text-main: #444;
+            --text-light: #999;
             
-            /* 好寶寶主題 (珊瑚紅) */
-            --good-color: #e56b6f;
-            --good-light: #fff5f5;
-            
-            /* 壞寶寶主題 (深藍灰) */
-            --bad-color: #457b9d;
-            --bad-light: #f0f8ff;
+            --good-color: #e56b6f; /* 紅 */
+            --bad-color: #457b9d;  /* 藍 */
+            --food-color: #f4a261; /* 橘 (食物) */
 
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --radius: 16px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.06);
+            --radius: 20px;
+            --nav-height: 70px;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0; /* 移除 padding，由 container 控制 */
             background-color: var(--bg-color);
-            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
-            background-size: 20px 20px;
             font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
             color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
+            height: 100vh;
+            overflow: hidden; /* 防止整體捲動，內容區自己捲動 */
+        }
+
+        /* --- 共用容器 (有捲軸) --- */
+        .page-container {
+            height: calc(100vh - var(--nav-height));
+            overflow-y: auto;
+            padding: 20px 20px 40px 20px;
+            display: none; /* 預設隱藏 */
             flex-direction: column;
             align-items: center;
         }
 
-        /* --- 登入層 --- */
-        #login-overlay {
+        .page-container.active { display: flex; }
+
+        /* --- 底部導航列 --- */
+        .bottom-nav {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 1000;
+            bottom: 0; left: 0; width: 100%;
+            height: var(--nav-height);
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .nav-item {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            padding: 30px;
-            transition: opacity 0.4s;
+            justify-content: center;
+            color: #ccc;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: color 0.3s;
+            width: 50%;
+            height: 100%;
         }
 
-        .login-card {
-            background: #fff;
-            padding: 40px 30px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            text-align: center;
-            width: 100%;
-            max-width: 320px;
-        }
+        .nav-icon { font-size: 1.5rem; margin-bottom: 2px; }
+        
+        .nav-item.active { color: var(--text-main); font-weight: bold; }
+        .nav-item.active .nav-icon { transform: scale(1.1); transition: transform 0.2s; }
 
-        .login-input {
-            width: 100%;
-            padding: 12px;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            text-align: center;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        .login-input:focus { border-color: var(--good-color); }
+        /* 特定頁籤顏色 */
+        .nav-item.active[data-target="card"] { color: var(--good-color); }
+        .nav-item.active[data-target="food"] { color: var(--food-color); }
 
-        /* --- 主畫面容器 --- */
-        .container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            padding-bottom: 50px; /* 預留底部空間 */
-        }
 
-        /* 頂部切換開關 */
+        /* ========== 頁面 1: 集點卡樣式 ========== */
+        
+        /* 切換開關 */
         .switch-container {
             display: flex;
-            background: #e0e0e0;
+            background: #e9e9e9;
             border-radius: 50px;
             padding: 4px;
             margin-bottom: 20px;
+            width: 100%; max-width: 350px;
             position: relative;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
         }
-
         .switch-btn {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            font-weight: bold;
-            z-index: 2;
-            cursor: pointer;
-            transition: color 0.3s;
-            font-size: 0.95rem;
+            flex: 1; text-align: center; padding: 10px 0;
+            font-weight: bold; z-index: 2; cursor: pointer;
+            transition: color 0.3s; font-size: 0.9rem;
         }
-
         .switch-bg {
-            position: absolute;
-            top: 4px; left: 4px;
-            width: calc(50% - 4px);
-            height: calc(100% - 8px);
-            background: #fff;
-            border-radius: 50px;
-            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 1;
+            position: absolute; top: 4px; left: 4px;
+            width: calc(50% - 4px); height: calc(100% - 8px);
+            background: #fff; border-radius: 50px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1;
         }
-
-        /* 切換狀態樣式 */
-        .mode-good .switch-bg { transform: translateX(0); background: #fff; }
+        .mode-good .switch-bg { transform: translateX(0); }
+        .mode-bad .switch-bg { transform: translateX(100%); }
         .mode-good .switch-btn.active { color: var(--good-color); }
-        
-        .mode-bad .switch-bg { transform: translateX(100%); background: #fff; }
         .mode-bad .switch-btn.active { color: var(--bad-color); }
 
-        /* --- 集點卡本體 --- */
         .card {
             background: var(--card-bg);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             padding: 25px 20px;
-            transition: border-top-color 0.3s;
-            border-top: 6px solid var(--good-color); /* 預設顏色 */
-            position: relative;
-            overflow: hidden;
+            width: 100%; max-width: 380px;
+            border-top: 6px solid var(--good-color);
+            transition: border-color 0.3s;
         }
-
         .mode-bad .card { border-top-color: var(--bad-color); }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-        }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+        .card-title { font-size: 1.4rem; font-weight: 900; margin: 0; }
+        .counter { font-size: 1.8rem; font-weight: 900; font-family: 'Zen Maru Gothic'; }
 
-        .user-name {
-            font-size: 0.9rem;
-            color: var(--text-light);
-            margin-bottom: 4px;
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .slot {
+            aspect-ratio: 1/1; border: 1px solid #eee; border-radius: 10px;
+            background: #fafafa; display: flex; justify-content: center; align-items: center;
+            position: relative; cursor: pointer;
+        }
+        .slot.stamped .stamp-mark { transform: scale(1) rotate(var(--r)); opacity: 1; }
+        .stamp-mark {
+            width: 80%; height: 80%; border-radius: 50%; border: 2px solid currentColor;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.8rem; font-weight: 900; opacity: 0; transform: scale(0);
+            transition: 0.3s;
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+        }
+        .mode-good .stamp-mark { color: var(--good-color); }
+        .mode-bad .stamp-mark { color: var(--bad-color); }
+
+
+        /* ========== 頁面 2: 吃什麼樣式 ========== */
+
+        .food-header {
+            text-align: center; margin-bottom: 20px;
+            width: 100%; max-width: 380px;
         }
         
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin: 0;
-            color: var(--text-main);
+        .result-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            border: 2px solid var(--food-color);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        .counter {
+        .result-text {
             font-size: 2rem;
             font-weight: 900;
-            font-family: 'Zen Maru Gothic';
-            line-height: 1;
-        }
-        .counter span { font-size: 0.9rem; color: #bbb; font-weight: normal; }
-
-        /* --- 格子區 (5x2) --- */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr); /* 一排5個 */
-            gap: 12px;
+            color: var(--food-color);
             margin-bottom: 10px;
+            min-height: 3rem; /* 避免跳動 */
         }
 
-        .slot {
-            aspect-ratio: 1/1;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fafafa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .slot:active { background: #eee; }
-        
-        /* 提示可蓋章的格子 */
-        .slot.next-slot {
-            border: 1px dashed #aaa;
-            background: #fff;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.05); }
-            70% { box-shadow: 0 0 0 5px rgba(0,0,0,0); }
-            100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
-        }
-
-        /* --- 印章樣式 --- */
-        .stamp-mark {
-            width: 85%;
-            height: 85%;
-            border-radius: 50%;
-            border: 2px solid currentColor;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.9rem; /* 字體縮小 */
-            font-weight: 900;
-            transform: rotate(var(--r)) scale(0);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* 模擬印泥紋理 */
-            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
-        }
-
-        /* 蓋章後的狀態 */
-        .slot.stamped .stamp-mark {
-            transform: rotate(var(--r)) scale(1);
-            opacity: 0.9;
-        }
-
-        /* 好寶寶印章 */
-        .mode-good .stamp-mark { color: var(--good-color); border-color: var(--good-color); }
-        /* 壞寶寶印章 */
-        .mode-bad .stamp-mark { color: var(--bad-color); border-color: var(--bad-color); }
-
-        /* 數字標示 */
-        .slot-number {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 0.6rem;
-            color: #ddd;
-            pointer-events: none;
-        }
-
-        /* --- Modal 彈窗 --- */
-        .modal-wrap {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(3px);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: flex-end; /* 手機習慣：從下方滑出 */
-            padding-bottom: 0;
-        }
-        @media(min-width: 500px) {
-            .modal-wrap { align-items: center; padding-bottom: 0; }
-            .modal-content { border-radius: 20px !important; margin-bottom: 0 !important; width: 320px !important; }
-        }
-
-        .modal-content {
-            background: #fff;
-            width: 100%;
-            border-radius: 20px 20px 0 0;
-            padding: 30px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
-            animation: slideUp 0.3s ease;
-            margin-bottom: 0;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-title {
-            font-size: 1.2rem;
+        .btn-spin {
+            background: var(--food-color);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 5px;
+            box-shadow: 0 4px 10px rgba(244, 162, 97, 0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
         }
-        .modal-subtitle {
-            font-size: 0.8rem;
-            color: #999;
+        .btn-spin:active { transform: scale(0.95); }
+        .btn-spin:disabled { background: #ddd; box-shadow: none; cursor: not-allowed; }
+
+        .food-list-container {
+            width: 100%; max-width: 380px;
+            background: #fff;
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .food-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 20px;
         }
 
-        textarea {
-            width: 100%;
-            height: 80px;
+        .tag {
+            background: #fdf0e6;
+            color: #d38445;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tag.highlight {
+            background: var(--food-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .tag-delete {
+            font-size: 1rem;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+        .tag-delete:hover { opacity: 1; }
+
+        .add-food-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-food {
+            flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 10px;
-            font-family: inherit;
-            resize: none;
-            font-size: 1rem;
-            margin-bottom: 20px;
+            outline: none;
         }
-
-        .btn-group { display: flex; gap: 10px; }
-        .btn {
-            flex: 1;
-            padding: 12px;
+        .btn-add {
+            background: #eee;
             border: none;
+            width: 40px;
             border-radius: 10px;
-            font-weight: bold;
-            font-size: 1rem;
+            font-size: 1.2rem;
+            color: #666;
             cursor: pointer;
         }
-        .btn-cancel { background: #f0f0f0; color: #666; }
-        .btn-primary { background: #333; color: #fff; }
-        .btn-danger { background: #ffebee; color: #d32f2f; }
 
-        .mode-good .btn-primary { background: var(--good-color); }
-        .mode-bad .btn-primary { background: var(--bad-color); }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
-        /* 按鈕回饋 */
-        .btn:active { transform: scale(0.98); }
 
-        /* 理由顯示區塊 */
-        .reason-display {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 10px;
-            color: #555;
-            margin-bottom: 20px;
-            line-height: 1.5;
+        /* --- 登入遮罩 & Modal (沿用) --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
+        .login-card { background: #fff; padding: 40px; border-radius: 20px; text-align: center; }
+        .login-input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0; text-align: center; font-size: 1.1rem; }
+        .btn-primary { background: #333; color: white; border: none; padding: 10px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        .modal-wrap {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #fff; width: 100%; max-width: 320px;
+            padding: 25px; border-radius: 20px;
+            animation: popUp 0.3s ease;
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; resize: none; margin: 10px 0 20px 0; }
+        .btn-group { display: flex; gap: 10px; }
+        .btn-group button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background: #f0f0f0; color: #666; }
 
     </style>
 </head>
 <body>
 
-    <!-- 登入遮罩 -->
+    <!-- 1. 登入層 -->
     <div id="login-overlay">
         <div class="login-card">
-            <h2 style="margin-top:0;">開始使用</h2>
-            <p style="color:#888; font-size:0.9rem;">這張卡片是屬於誰的呢？</p>
-            <input type="text" id="inputName" class="login-input" placeholder="輸入名字 (例如: 寶貝)" maxlength="8">
-            <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">確認</button>
+            <h2>你是誰呢？</h2>
+            <input type="text" id="inputName" class="login-input" placeholder="輸入名字..." maxlength="8">
+            <button class="btn-primary" onclick="handleLogin()">進入</button>
         </div>
     </div>
 
-    <div class="container" id="mainApp" style="opacity: 0;">
-        
-        <!-- 切換開關 -->
+    <!-- 2. 底部導航 -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('card')" data-target="card">
+            <div class="nav-icon">❤️</div>
+            <span>集點卡</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('food')" data-target="food">
+            <div class="nav-icon">🍽️</div>
+            <span>吃什麼</span>
+        </div>
+    </nav>
+
+    <!-- 3. 頁面A: 集點卡 -->
+    <div id="page-card" class="page-container active">
         <div class="switch-container mode-good" id="switchContainer">
             <div class="switch-bg"></div>
             <div class="switch-btn active" id="btnGood" onclick="toggleMode('good')">好寶寶</div>
             <div class="switch-btn" id="btnBad" onclick="toggleMode('bad')">壞寶寶</div>
         </div>
 
-        <!-- 卡片區 -->
-        <div class="card" id="cardElement">
+        <div class="card">
             <div class="header">
                 <div>
-                    <div class="user-name" id="displayUserName">Name</div>
-                    <div class="card-title" id="cardTitleText">好寶寶集點</div>
+                    <div style="font-size:0.9rem; color:#999;" id="displayName">寶寶 的</div>
+                    <div class="card-title" id="cardTitleText" style="color:var(--good-color)">好寶寶集點</div>
                 </div>
-                <div class="counter">
-                    <span id="scoreText">0</span><span>/10</span>
-                </div>
+                <div class="counter" id="scoreText" style="color:var(--good-color)">0<span>/10</span></div>
             </div>
-
-            <div class="grid" id="gridContainer">
-                <!-- JS 自動生成 10 個格子 -->
-            </div>
-            
-            <p style="text-align: center; color: #aaa; font-size: 0.8rem; margin-top: 20px;">
-                點擊印章可查看詳細理由
-            </p>
+            <div class="grid" id="gridContainer"></div>
         </div>
-
     </div>
 
-    <!-- Modal: 新增/查看 -->
+    <!-- 4. 頁面B: 吃什麼 -->
+    <div id="page-food" class="page-container">
+        <div class="food-header">
+            <h2 style="margin: 0; color: var(--text-main);">今天吃什麼？</h2>
+            <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #999;">別再說「隨便」了！</p>
+        </div>
+
+        <div class="result-box">
+            <div class="result-text" id="foodResult">?</div>
+            <button class="btn-spin" id="spinBtn" onclick="pickFood()">幫我決定！</button>
+        </div>
+
+        <div class="food-list-container">
+            <h3 style="margin-top:0; font-size:1rem;">候選清單</h3>
+            <div class="food-tags" id="foodTags">
+                <!-- JS 生成 -->
+            </div>
+            
+            <div class="add-food-group">
+                <input type="text" id="newFoodInput" class="input-food" placeholder="想加什麼..." onkeypress="if(event.key==='Enter') addFood()">
+                <button class="btn-add" onclick="addFood()">+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Modal -->
     <div class="modal-wrap" id="modal">
         <div class="modal-content">
-            <div class="modal-title" id="mTitle">標題</div>
-            <div class="modal-subtitle" id="mDate">日期</div>
+            <h3 id="mTitle" style="margin-top:0">標題</h3>
+            <p id="mDate" style="color:#999; font-size:0.8rem;"></p>
             
-            <!-- 輸入區 -->
             <div id="inputSection">
-                <textarea id="reasonInput" placeholder="請輸入原因..."></textarea>
+                <textarea id="reasonInput" placeholder="寫下理由..."></textarea>
                 <div class="btn-group">
-                    <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-                    <button class="btn btn-primary" onclick="confirmStamp()">蓋章</button>
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmStamp()">確認</button>
                 </div>
             </div>
 
-            <!-- 查看區 -->
             <div id="viewSection" style="display:none;">
-                <div class="reason-display" id="reasonText"></div>
+                <p id="reasonText" style="background:#f9f9f9; padding:10px; border-radius:10px;"></p>
                 <div class="btn-group">
-                    <button class="btn btn-cancel" onclick="closeModal()">關閉</button>
-                    <button class="btn btn-danger" onclick="deletePoint()">刪除此點</button>
+                    <button class="btn-cancel" onclick="closeModal()">關閉</button>
+                    <button onclick="deletePoint()" style="background:#ffebee; color:red;">刪除</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 資料狀態
+        // --- 全域資料 ---
+        const DEFAULT_FOODS = ["壽司", "日式簡餐", "拉麵", "咖哩", "麥當勞", "鹹酥雞", "火鍋", "滷味"];
+        
         const STATE = {
             user: "",
-            mode: "good", // good | bad
+            mode: "good",
             goodPoints: [],
-            badPoints: []
+            badPoints: [],
+            foodList: [...DEFAULT_FOODS]
         };
-        
-        let currentFocusIndex = -1; // 用來記錄目前點擊的是哪一格
 
-        // DOM
+        // --- DOM Cache ---
         const els = {
             login: document.getElementById('login-overlay'),
-            main: document.getElementById('mainApp'),
             inputName: document.getElementById('inputName'),
-            displayName: document.getElementById('displayUserName'),
+            displayName: document.getElementById('displayName'),
+            // Card Page
+            pageCard: document.getElementById('page-card'),
             switchContainer: document.getElementById('switchContainer'),
             btnGood: document.getElementById('btnGood'),
             btnBad: document.getElementById('btnBad'),
-            card: document.getElementById('cardElement'),
             cardTitle: document.getElementById('cardTitleText'),
             score: document.getElementById('scoreText'),
             grid: document.getElementById('gridContainer'),
+            // Food Page
+            pageFood: document.getElementById('page-food'),
+            foodResult: document.getElementById('foodResult'),
+            spinBtn: document.getElementById('spinBtn'),
+            foodTags: document.getElementById('foodTags'),
+            newFoodInput: document.getElementById('newFoodInput'),
             // Modal
             modal: document.getElementById('modal'),
             mTitle: document.getElementById('mTitle'),
@@ -443,186 +420,237 @@
             reasonText: document.getElementById('reasonText')
         };
 
-        // 初始化
+        let currentFocusIndex = -1;
+
+        // --- 初始化 ---
         function init() {
-            const saved = localStorage.getItem('love_card_v3');
+            const saved = localStorage.getItem('love_card_v4');
             if(saved) {
                 const data = JSON.parse(saved);
-                STATE.user = data.user;
+                STATE.user = data.user || "";
                 STATE.goodPoints = data.goodPoints || [];
                 STATE.badPoints = data.badPoints || [];
+                // 確保食物清單存在
+                if(data.foodList && data.foodList.length > 0) {
+                    STATE.foodList = data.foodList;
+                }
                 
                 if(STATE.user) {
                     els.login.style.display = 'none';
-                    els.main.style.opacity = 1;
-                    els.displayName.textContent = STATE.user + " 的";
-                    render();
+                    els.displayName.innerText = STATE.user + " 的";
+                    renderCard();
+                    renderFoodList();
                 }
+            } else {
+                renderFoodList(); // 渲染預設食物
             }
         }
 
-        // 登入處理
-        window.handleLogin = function() {
-            const name = els.inputName.value.trim();
-            if(!name) return alert("請輸入名字");
-            
-            STATE.user = name;
-            save();
-            
-            els.login.style.opacity = 0;
-            setTimeout(() => {
-                els.login.style.display = 'none';
-                els.main.style.opacity = 1;
-            }, 400);
-            
-            els.displayName.textContent = STATE.user + " 的";
-            render();
+        function save() {
+            localStorage.setItem('love_card_v4', JSON.stringify(STATE));
         }
 
-        // 切換模式
+        // --- 導航與登入 ---
+        window.handleLogin = function() {
+            const val = els.inputName.value.trim();
+            if(!val) return alert("請輸入名字");
+            STATE.user = val;
+            save();
+            els.login.style.display = 'none';
+            els.displayName.innerText = STATE.user + " 的";
+            renderCard();
+        }
+
+        window.switchPage = function(target) {
+            // 更新 Nav 樣式
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if(item.dataset.target === target) item.classList.add('active');
+            });
+            // 切換頁面顯示
+            els.pageCard.classList.remove('active');
+            els.pageFood.classList.remove('active');
+            
+            if(target === 'card') els.pageCard.classList.add('active');
+            if(target === 'food') els.pageFood.classList.add('active');
+        }
+
+        // ================= 集點卡邏輯 =================
+
         window.toggleMode = function(mode) {
             STATE.mode = mode;
-            
-            // UI 更新
             if(mode === 'good') {
-                els.switchContainer.classList.remove('mode-bad');
-                els.switchContainer.classList.add('mode-good');
+                els.switchContainer.className = "switch-container mode-good";
                 els.btnGood.classList.add('active');
                 els.btnBad.classList.remove('active');
-                els.card.parentElement.className = "container mode-good";
                 els.cardTitle.innerText = "好寶寶集點";
                 els.cardTitle.style.color = "var(--good-color)";
                 els.score.style.color = "var(--good-color)";
             } else {
-                els.switchContainer.classList.remove('mode-good');
-                els.switchContainer.classList.add('mode-bad');
+                els.switchContainer.className = "switch-container mode-bad";
                 els.btnBad.classList.add('active');
                 els.btnGood.classList.remove('active');
-                els.card.parentElement.className = "container mode-bad";
                 els.cardTitle.innerText = "壞寶寶紀錄";
                 els.cardTitle.style.color = "var(--bad-color)";
                 els.score.style.color = "var(--bad-color)";
             }
-            render();
+            renderCard();
         }
 
-        // 渲染格子
-        function render() {
+        function renderCard() {
             els.grid.innerHTML = "";
             const list = STATE.mode === 'good' ? STATE.goodPoints : STATE.badPoints;
-            els.score.innerText = list.length;
+            els.score.innerHTML = `${list.length}<span>/10</span>`;
 
             for(let i=0; i<10; i++) {
                 const item = list[i];
                 const slot = document.createElement('div');
                 slot.className = 'slot';
-                
-                // 產生隨機角度
-                const rot = Math.floor(Math.random()*40 - 20); 
+                const rot = Math.floor(Math.random()*40 - 20);
 
                 if(item) {
-                    // 已蓋章
                     slot.classList.add('stamped');
-                    slot.innerHTML = `
-                        <div class="stamp-mark" style="--r:${rot}deg">
-                            ${STATE.mode === 'good' ? '優' : '罰'}
-                        </div>
-                    `;
+                    const markChar = STATE.mode === 'good' ? '優' : '罰';
+                    slot.innerHTML = `<div class="stamp-mark" style="--r:${rot}deg">${markChar}</div>`;
                     slot.onclick = () => openViewModal(i, item);
-                } else if (i === list.length) {
-                    // 下一個空格
-                    slot.classList.add('next-slot');
+                } else if(i === list.length) {
+                    slot.style.border = "2px dashed #bbb";
+                    slot.innerHTML = "<span style='color:#ccc; font-size:2rem;'>+</span>";
                     slot.onclick = () => openInputModal();
                 } else {
-                    // 尚未解鎖
                     slot.style.opacity = 0.5;
-                    slot.style.cursor = 'default';
+                    slot.style.background = "#f0f0f0";
                 }
-
-                // 右下角數字
-                slot.innerHTML += `<span class="slot-number">${i+1}</span>`;
                 els.grid.appendChild(slot);
             }
         }
 
-        // --- Modal 操作 ---
-
+        // Modal 操作
         window.openInputModal = function() {
             els.modal.style.display = 'flex';
             els.inputSec.style.display = 'block';
             els.viewSec.style.display = 'none';
-            
-            els.mTitle.innerText = STATE.mode === 'good' ? "獲得好寶寶印章" : "新增壞寶寶紀錄";
+            els.mTitle.innerText = STATE.mode === 'good' ? "Good Job!" : "Oh No...";
             els.mDate.innerText = new Date().toLocaleDateString();
             els.reasonInput.value = "";
             els.reasonInput.focus();
         }
-
-        window.openViewModal = function(index, item) {
-            currentFocusIndex = index;
+        window.openViewModal = function(idx, item) {
+            currentFocusIndex = idx;
             els.modal.style.display = 'flex';
             els.inputSec.style.display = 'none';
             els.viewSec.style.display = 'block';
-            
-            els.mTitle.innerText = `第 ${index+1} 點的詳細內容`;
+            els.mTitle.innerText = "詳細記錄";
             els.mDate.innerText = item.date;
-            els.reasonText.innerText = item.reason || "沒有填寫理由";
+            els.reasonText.innerText = item.reason;
         }
-
-        window.closeModal = function() {
-            els.modal.style.display = 'none';
-        }
-
-        // 確認蓋章
+        window.closeModal = function() { els.modal.style.display = 'none'; }
+        
         window.confirmStamp = function() {
-            const reason = els.reasonInput.value.trim() || "未填寫";
-            const newPoint = {
-                reason: reason,
-                date: new Date().toLocaleString()
-            };
-
+            const reason = els.reasonInput.value.trim() || "無理由";
+            const item = { reason, date: new Date().toLocaleString() };
             if(STATE.mode === 'good') {
-                STATE.goodPoints.push(newPoint);
-                // 特效
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.8 },
-                    colors: ['#e56b6f', '#ffcdb2']
-                });
+                STATE.goodPoints.push(item);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors:['#e56b6f', '#ffd60a'] });
             } else {
-                STATE.badPoints.push(newPoint);
+                STATE.badPoints.push(item);
             }
-
-            save();
-            render();
-            closeModal();
-            
-            if(STATE.goodPoints.length === 10 && STATE.mode === 'good') {
-                setTimeout(()=>alert("恭喜集滿 10 點！可以兌換願望囉！"), 500);
-            }
+            save(); renderCard(); closeModal();
         }
-
-        // 刪除點數
         window.deletePoint = function() {
-            if(!confirm("確定要刪除這一點嗎？")) return;
-            
+            if(!confirm("刪除此記錄？")) return;
             const list = STATE.mode === 'good' ? STATE.goodPoints : STATE.badPoints;
             list.splice(currentFocusIndex, 1);
-            
-            save();
-            render();
-            closeModal();
+            save(); renderCard(); closeModal();
         }
 
-        function save() {
-            localStorage.setItem('love_card_v3', JSON.stringify(STATE));
+        // ================= 吃什麼邏輯 =================
+
+        function renderFoodList() {
+            els.foodTags.innerHTML = "";
+            STATE.foodList.forEach((food, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.id = `food-tag-${index}`;
+                tag.innerHTML = `
+                    ${food} 
+                    <span class="tag-delete" onclick="deleteFood(${index})">×</span>
+                `;
+                els.foodTags.appendChild(tag);
+            });
+        }
+
+        window.addFood = function() {
+            const val = els.newFoodInput.value.trim();
+            if(!val) return;
+            STATE.foodList.push(val);
+            els.newFoodInput.value = "";
+            save();
+            renderFoodList();
+        }
+
+        window.deleteFood = function(index) {
+            if(STATE.foodList.length <= 2) return alert("至少保留兩個選項啦！");
+            STATE.foodList.splice(index, 1);
+            save();
+            renderFoodList();
+        }
+
+        window.pickFood = function() {
+            if(STATE.foodList.length === 0) return;
+            
+            els.spinBtn.disabled = true;
+            els.spinBtn.innerText = "選取中...";
+            els.foodResult.style.color = "var(--text-light)";
+            
+            let count = 0;
+            const totalRounds = 20; // 跳動次數
+            const speed = 100; // 速度
+            
+            const interval = setInterval(() => {
+                // 隨機高亮 Tag
+                const randomIdx = Math.floor(Math.random() * STATE.foodList.length);
+                
+                // 清除所有高亮
+                document.querySelectorAll('.tag').forEach(t => t.classList.remove('highlight'));
+                // 加上高亮
+                const targetTag = document.getElementById(`food-tag-${randomIdx}`);
+                if(targetTag) targetTag.classList.add('highlight');
+                
+                // 更新文字顯示
+                els.foodResult.innerText = STATE.foodList[randomIdx];
+
+                count++;
+                if(count > totalRounds) {
+                    clearInterval(interval);
+                    finalizePick(randomIdx);
+                }
+            }, speed);
+        }
+
+        function finalizePick(finalIdx) {
+            const finalFood = STATE.foodList[finalIdx];
+            
+            // 最終視覺效果
+            els.foodResult.innerText = finalFood;
+            els.foodResult.style.color = "var(--food-color)";
+            els.foodResult.style.transform = "scale(1.2)";
+            setTimeout(() => els.foodResult.style.transform = "scale(1)", 200);
+
+            // 放煙火
+            confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.4 },
+                colors: ['#f4a261', '#2a9d8f', '#e9c46a']
+            });
+
+            els.spinBtn.disabled = false;
+            els.spinBtn.innerText = "再選一次";
         }
 
         // 啟動
         init();
-        // 預設跑一次 Toggle 確保 UI 正確
-        toggleMode('good'); 
 
     </script>
 </body>
